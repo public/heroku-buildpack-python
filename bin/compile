@@ -229,6 +229,7 @@ bpwatch start install_wheels
     --src=./.heroku/src \
     --find-links=$WHEEL_DIR \
     --no-index \
+    --no-compile \
     --download-cache=$CACHE_DIR/pip \
     -r requirements.txt | cleanup | indent
 bpwatch stop install_wheels
