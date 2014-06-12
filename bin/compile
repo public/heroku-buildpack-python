@@ -222,6 +222,7 @@ bpwatch start make_wheels
 /app/.heroku/python/bin/pip wheel \
     --use-wheel \
     --wheel-dir=$WHEEL_DIR \
+    --find-links=$WHEEL_DIR \
     --download-cache=$CACHE_DIR/pip \
     -r requirements.txt | cleanup | indent
 bpwatch stop make_wheels
@@ -230,7 +231,7 @@ bpwatch start install_wheels
 /app/.heroku/python/bin/pip install \
     --exists-action=w \
     --src=./.heroku/src \
-    --wheel-dir=$WHEEL_DIR \
+    --find-links=$WHEEL_DIR \
     --no-index \
     --download-cache=$CACHE_DIR/pip \
     -r requirements.txt | cleanup | indent
