@@ -201,14 +201,10 @@ if [ "$FRESH_PYTHON" ] || [[ ! $(pip --version) == *$PIP_VERSION* ]]; then
     python setup.py install &> /dev/null
     cd $WORKING_DIR
 
-  bpwatch stop install_pip
-
-  bpwatch start install_wheel
-
-    puts-step "Installing Wheel"
     /app/.heroku/python/bin/pip install wheel
+    /app/.heroku/python/bin/pip install distribute
 
-  bpwatch stop prepare_environment
+  bpwatch stop install_pip
 fi
 
 set -e
