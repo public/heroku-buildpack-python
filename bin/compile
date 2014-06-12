@@ -17,7 +17,6 @@ BUILD_DIR=$1
 CACHE_DIR=$2
 ENV_DIR=$3
 
-
 CACHED_DIRS=".heroku"
 
 # Static configurations for virtualenv caches.
@@ -203,49 +202,38 @@ if [ "$FRESH_PYTHON" ] || [[ ! $(pip --version) == *$PIP_VERSION* ]]; then
     cd $WORKING_DIR
 
   bpwatch stop install_pip
+
+  bpwatch start install_wheel
+
+    puts-step "Installing Wheel"
+    /app/.heroku/python/bin/pip install wheel
+
   bpwatch stop prepare_environment
 fi
 
 set -e
 hash -r
 
-# Pylibmc support.
-# See [`bin/steps/pylibmc`](pylibmc.html).
-bpwatch start pylibmc_install
-  source $BIN_DIR/steps/pylibmc
-bpwatch stop pylibmc_install
+# Update wheel dir
+WHEEL_DIR=$CACHE_DIR/wheels
+mkdir -p $WHEEL_DIR
 
-# Install Mercurial if it appears to be required.
-if (grep -Fiq "hg+" requirements.txt) then
-  bpwatch start mercurial_install
-    /app/.heroku/python/bin/pip install  mercurial | cleanup | indent
-  bpwatch stop mercurial_install
-fi
+bpwatch start make_wheels
+/app/.heroku/python/bin/pip wheel \
+    --use-wheel \
+    --wheel-dir=$WHEEL_DIR \
+    --download-cache=$CACHE_DIR/pip \
+    -r requirements.txt | cleanup | indent
+bpwatch stop make_wheels
 
-# Install dependencies with Pip.
-puts-step "Installing dependencies using Pip ($PIP_VERSION)"
-
-
-[ ! "$FRESH_PYTHON" ] && bpwatch start pip_install
-[ "$FRESH_PYTHON" ] && bpwatch start pip_install_first
-
-/app/.heroku/python/bin/pip install -r requirements.txt \
+bpwatch start install_wheels
+/app/.heroku/python/bin/pip install \
     --exists-action=w \
     --src=./.heroku/src \
-    --allow-all-external \
-    --download-cache=/tmp/cache/pip \
-    --find-links=http://pkgs.lystit.com | cleanup | indent
-
-[ ! "$FRESH_PYTHON" ] && bpwatch stop pip_install
-[ "$FRESH_PYTHON" ] && bpwatch stop pip_install_first
-
-# Django collectstatic support.
-bpwatch start collectstatic
-  sub-env $BIN_DIR/steps/collectstatic
-bpwatch stop collectstatic
-
-# ### Finalize
-#
+    --wheel-dir=$WHEEL_DIR \
+    --download-cache=$CACHE_DIR/pip \
+    -r requirements.txt | cleanup | indent
+bpwatch stop install_wheels
 
 # Set context environment variables.
 set-env PATH '$HOME/.heroku/python/bin:$PATH'
